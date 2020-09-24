@@ -1,0 +1,4 @@
+* Attempts at first game
+
+** SETUP
+- install [[https://vulkan.lunarg.com/doc/sdk/1.2.148.1/mac/getting_started.html][vulkan sdk]]
