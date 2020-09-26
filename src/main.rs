@@ -42,6 +42,7 @@ fn main() {
     let physical = PhysicalDevice::enumerate(&instance)
         .next()
         .expect("no device available");
+    // PhysicalDevice::enumerate(&instance).for_each(|d| println!("device ${:?}", d));
     let queue_family = physical
         .queue_families()
         .find(|&q| q.supports_graphics() && surface.is_supported(q).unwrap_or(false))
@@ -116,9 +117,17 @@ fn main() {
             ty: "vertex",
             src: "
 				#version 450
+        layout(location = 0) out vec3 fragColor;
+
 				layout(location = 0) in vec2 position;
+        vec3 colors[3] = vec3[](
+            vec3(1.0, 0.0, 0.0),
+            vec3(0.0, 1.0, 0.0),
+            vec3(0.0, 0.0, 1.0)
+        );
 				void main() {
 					gl_Position = vec4(position, 0.0, 1.0);
+          fragColor = colors[gl_VertexIndex];
 				}
 			"
         }
@@ -130,8 +139,9 @@ fn main() {
             src: "
 				#version 450
 				layout(location = 0) out vec4 f_color;
+        layout(location = 0) in vec3 fragColor;
 				void main() {
-					f_color = vec4(0.9, 0.3, 0.5, 1.0);
+					f_color = vec4(fragColor, 1.0);
 				}
 			"
         }
@@ -198,7 +208,13 @@ fn main() {
         } => {
             recreate_swapchain = true;
         }
-        Event::RedrawEventsCleared => {
+        Event::WindowEvent {
+            event: WindowEvent::KeyboardInput { input, .. },
+            ..
+        } => {
+            println!("PRESSED ${:?}", input);
+        }
+        Event::MainEventsCleared => {
             previous_frame_end.as_mut().unwrap().cleanup_finished();
             if recreate_swapchain {
                 let dimensions: [u32; 2] = surface.window().inner_size().into();
