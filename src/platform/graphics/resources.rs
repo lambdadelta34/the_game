@@ -16,7 +16,8 @@ use gfx_hal::{
     pool::{CommandPool, CommandPoolCreateFlags},
     pso::{
         BlendState, ColorBlendDesc, ColorMask, EntryPoint, Face, GraphicsPipelineDesc,
-        InputAssemblerDesc, Primitive, PrimitiveAssemblerDesc, Rasterizer, Specialization,
+        InputAssemblerDesc, Primitive, PrimitiveAssemblerDesc, Rasterizer, ShaderStageFlags,
+        Specialization,
     },
     queue::{QueueFamily, QueueGroup},
     window::{PresentationSurface, Surface},
@@ -42,6 +43,7 @@ pub struct Resources<B: gfx_hal::Backend> {
     pub surface_color_format: Format,
     pub command_buffer: B::CommandBuffer,
     pub queue_group: QueueGroup<B>,
+    pub frame: u64,
 }
 
 impl Resources<back::Backend> {
@@ -111,8 +113,9 @@ impl Resources<back::Backend> {
             }
         };
         let pipeline_layout = unsafe {
+            let push_constant_bytes = std::mem::size_of::<PushConstants>() as u32;
             device
-                .create_pipeline_layout(&[], &[])
+                .create_pipeline_layout(&[], &[(ShaderStageFlags::VERTEX, 0..push_constant_bytes)])
                 .expect("Out of memory")
         };
         let vertex_shader = include_str!("./shaders/vertex/vs.vert");
@@ -142,6 +145,7 @@ impl Resources<back::Backend> {
             surface_color_format,
             command_buffer,
             queue_group,
+            frame: u64::MIN,
         })
     }
 }
@@ -257,4 +261,12 @@ fn compile_shader(glsl: &str, shader_kind: ShaderKind) -> Vec<u32> {
         .compile_into_spirv(glsl, shader_kind, "unnamed", "main", None)
         .expect("Failed to compile shader");
     compiled_shader.as_binary().to_vec()
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct PushConstants {
+    pub color: [f32; 4],
+    pub pos: [f32; 2],
+    pub scale: [f32; 2],
 }

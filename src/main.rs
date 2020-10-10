@@ -17,6 +17,7 @@ fn main() {
     let event_loop = window.event_loop;
     let mut extent = window.surface_extent;
 
+    let start_time = std::time::Instant::now();
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
             event: WindowEvent::CloseRequested,
@@ -44,7 +45,7 @@ fn main() {
         }
         // redraw continiously
         Event::MainEventsCleared => {
-            Renderer::draw(&mut resources, &mut extent);
+            Renderer::draw(&mut resources, &mut extent, start_time);
         }
         Event::RedrawRequested(_) => {} // redraw after event
         _ => (),
