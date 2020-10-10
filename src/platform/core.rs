@@ -1,17 +1,17 @@
-use super::graphics::window::init_window;
+use super::graphics::renderer;
+use renderer::Renderer;
 
-use init_window::WinitState;
-use vulkano_win::CreationError;
+pub const APP_NAME: &'static str = "Gamey";
 
 #[derive(Debug)]
 pub struct Platform {
-    pub surface: WinitState,
+    pub graphics: Renderer,
 }
 
 impl Platform {
-    pub fn start() -> Result<Self, CreationError> {
-        let surface = WinitState::new()?;
+    pub fn start() -> Result<Self, ()> {
+        let graphics = Renderer::new()?;
 
-        Ok(Self { surface })
+        Ok(Self { graphics })
     }
 }
