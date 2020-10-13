@@ -5,7 +5,7 @@ use gfx_backend_metal as back;
 #[cfg(feature = "vulkan")]
 use gfx_backend_vulkan as back;
 
-use super::super::core::APP_NAME;
+use super::super::APP_NAME;
 use gfx_hal::{
     adapter::{Adapter, PhysicalDevice},
     command::Level,

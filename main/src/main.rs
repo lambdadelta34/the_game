@@ -1,4 +1,4 @@
-use platform::core::Platform;
+use platform::Platform;
 use platform::graphics::renderer::Renderer;
 use simple_logger::SimpleLogger;
 use winit::event::{Event, WindowEvent};
@@ -27,6 +27,7 @@ fn main() {
     // let mut last_modified = std::fs::metadata(LIB_PATH).unwrap()
     //     .modified().unwrap();
     // let platform = Platform::start().unwrap();
+    // TODO: refactor code to support  hot reloading
     let platform = app.build_platform();
     let graphics = platform.graphics;
     let Renderer {

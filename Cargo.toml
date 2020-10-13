@@ -2,6 +2,7 @@
 members = [
 	"main",
 	"platform",
+	"queue",
 ]
 
 [profile.dev]

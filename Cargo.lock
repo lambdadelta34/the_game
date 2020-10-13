@@ -887,6 +887,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "queue"
+version = "0.1.0"
+
+[[package]]
 name = "quote"
 version = "0.6.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
