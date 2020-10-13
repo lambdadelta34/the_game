@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["lambdadelta"]
 edition = "2018"
 
-# [lib]
-# crate-type=["dylib"]
+[lib]
+crate-type=["dylib"]
 
 [features]
 default = ["gfx-backend-metal"]

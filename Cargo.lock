@@ -570,6 +570,7 @@ dependencies = [
 name = "main"
 version = "0.1.0"
 dependencies = [
+ "libloading",
  "log",
  "platform",
  "simple_logger",

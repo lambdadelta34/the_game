@@ -4,13 +4,30 @@ use simple_logger::SimpleLogger;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::ControlFlow;
 
-// const LIB_PATH: &'static str = "../../target/debug/libplatform.dylib";
+use libloading::Library;
+
+struct Application(Library);
+impl Application {
+    fn build_platform(&self) -> Platform {
+        unsafe {
+            let f = self.0.get::<fn() -> Platform>(
+                b"build_platform\0"
+            ).unwrap();
+            f()
+        }
+    }
+}
+const LIB_PATH: &'static str = "./target/debug/libplatform.dylib";
 
 fn main() {
     SimpleLogger::from_env().init().unwrap();
-    // let mut last_modified = std::fs::metadata(LIB_PATH).unwrap().modified().unwrap();
-    // println!("${:?}", &last_modified);
-    let platform = Platform::start().unwrap();
+    let app = Application(Library::new(LIB_PATH)
+        .unwrap_or_else(|error| panic!("{}", error)));
+
+    // let mut last_modified = std::fs::metadata(LIB_PATH).unwrap()
+    //     .modified().unwrap();
+    // let platform = Platform::start().unwrap();
+    let platform = app.build_platform();
     let graphics = platform.graphics;
     let Renderer {
         window,
@@ -18,7 +35,6 @@ fn main() {
     } = graphics;
     let event_loop = window.event_loop;
     let mut extent = window.surface_extent;
-
     let start_time = std::time::Instant::now();
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
