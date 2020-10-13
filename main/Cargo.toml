@@ -1,0 +1,12 @@
+[package]
+name = "main"
+version = "0.1.0"
+authors = ["lambdadelta"]
+edition = "2018"
+
+[dependencies]
+platform = { path = "../platform" }
+
+log = "0.4.11"
+simple_logger = "1.9.0"
+winit = "0.22.2"

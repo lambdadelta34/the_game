@@ -1,5 +1,4 @@
-use super::graphics::renderer;
-use renderer::Renderer;
+use super::graphics::renderer::Renderer;
 
 pub const APP_NAME: &'static str = "Gamey";
 

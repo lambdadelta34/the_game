@@ -1,63 +1,13 @@
-[package]
-name = "the_game"
-version = "0.1.0"
-authors = ["lambdadelta"]
-edition = "2018"
-
-[features]
-default = ["gfx-backend-metal"]
-metal = ["gfx-backend-metal"]
-dx12 = ["gfx-backend-dx12"]
-vulkan = ["gfx-backend-vulkan"]
-
-# [dependencies]
-# arrayvec = "0.5.1"
-# gfx-hal = "0.6.0"
-# shaderc = "0.6.2"
-# log = "0.4.11"
-# simple_logger = "1.9.0"
-# vulkano = "0.19"
-# vulkano-shaders = "0.18"
-# vulkano-win = "0.19"
-# winit = "0.22.2"
-
-[dependencies.gfx-backend-vulkan]
-package = "gfx-backend-vulkan"
-version = "0.6.3"
-optional = true
-
-[target.'cfg(target_os = "macos")'.dependencies.gfx-backend-metal]
-package = "gfx-backend-metal"
-version = "0.6.3"
-optional = true
-
-[target.'cfg(windows)'.dependencies.gfx-backend-dx12]
-package = "gfx-backend-dx12"
-version = "0.6.3"
-optional = true
-
-[dependencies]
-gfx-hal = "0.6.0"
-log = "0.4.11"
-shaderc = "0.6.2"
-simple_logger = "1.9.0"
-winit = "0.22.2"
-
-# [target.'cfg(target_os = "macos")'.dependencies.backend]
-# package = "gfx-backend-metal"
-# version = "0.6.3"
-
-# [target.'cfg(windows)'.dependencies.backend]
-# package = "gfx-backend-dx12"
-# version = "0.6.3"
-
-# [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies.backend]
-# package = "gfx-backend-vulkan"
-# version = "0.6.3"
+[workspace]
+members = [
+	"main",
+	"platform",
+]
 
 [profile.dev]
-debug = true
 opt-level = 0
+debug = true
+incremental = true
 
 [profile.release]
 opt-level = 3

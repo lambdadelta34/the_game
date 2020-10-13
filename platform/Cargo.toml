@@ -1,0 +1,36 @@
+[package]
+name = "platform"
+version = "0.1.0"
+authors = ["lambdadelta"]
+edition = "2018"
+
+# [lib]
+# crate-type=["dylib"]
+
+[features]
+default = ["gfx-backend-metal"]
+metal = ["gfx-backend-metal"]
+dx12 = ["gfx-backend-dx12"]
+vulkan = ["gfx-backend-vulkan"]
+
+[dependencies.gfx-backend-vulkan]
+package = "gfx-backend-vulkan"
+version = "0.6.3"
+optional = true
+
+[target.'cfg(target_os = "macos")'.dependencies.gfx-backend-metal]
+package = "gfx-backend-metal"
+version = "0.6.3"
+optional = true
+
+[target.'cfg(windows)'.dependencies.gfx-backend-dx12]
+package = "gfx-backend-dx12"
+version = "0.6.3"
+optional = true
+
+[dependencies]
+gfx-hal = "0.6.0"
+log = "0.4.11"
+shaderc = "0.6.2"
+simple_logger = "1.9.0"
+winit = "0.22.2"

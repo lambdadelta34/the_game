@@ -178,8 +178,9 @@ impl Renderer {
                 wait_semaphores: None,
                 signal_semaphores: vec![&semaphore],
             };
-            queue_group.queues[0].submit(submission, Some(&fence));
-            queue_group.queues[0]
+            let queue = &mut queue_group.queues[0];
+            queue.submit(submission, Some(&fence));
+            queue
                 .present(surface, surface_image, Some(&semaphore))
                 .unwrap();
             &device.destroy_framebuffer(framebuffer);

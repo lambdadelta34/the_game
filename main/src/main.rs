@@ -1,13 +1,15 @@
-mod platform;
-
-// use gfx_hal::window::Extent2D;
 use platform::core::Platform;
 use platform::graphics::renderer::Renderer;
 use simple_logger::SimpleLogger;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::ControlFlow;
+
+// const LIB_PATH: &'static str = "../../target/debug/libplatform.dylib";
+
 fn main() {
     SimpleLogger::from_env().init().unwrap();
+    // let mut last_modified = std::fs::metadata(LIB_PATH).unwrap().modified().unwrap();
+    // println!("${:?}", &last_modified);
     let platform = Platform::start().unwrap();
     let graphics = platform.graphics;
     let Renderer {
