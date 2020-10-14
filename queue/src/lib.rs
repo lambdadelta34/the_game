@@ -1,5 +1,5 @@
 // find a way to create mutable shared ownership
-use std::sync::Arc;
+use std::sync::{ Arc, Mutex };
 
 #[derive(Debug, Copy, Clone)]
 pub struct Message {
@@ -25,31 +25,31 @@ impl Channel {
 
 #[derive(Debug)]
 pub struct Publisher {
-    pub channel: Arc<Channel>,
+    pub channel: Arc<Mutex<Channel>>,
 }
 impl Publisher {
-    pub fn new(channel: Arc<Channel>) -> Self {
+    pub fn new(channel: Arc<Mutex<Channel>>) -> Self {
         Self {
             channel
         }
     }
     pub fn broadcast(&self, message: Message) {
-        // self.channel.messages.push(message);
+        self.channel.lock().unwrap().messages.push(message);
     }
 }
 
 #[derive(Debug)]
 pub struct Subscriber {
-    pub channel: Arc<Channel>,
+    pub channel: Arc<Mutex<Channel>>,
 }
 impl Subscriber {
-    pub fn new(channel: Arc<Channel>) -> Self {
+    pub fn new(channel: Arc<Mutex<Channel>>) -> Self {
         Self {
             channel
         }
     }
     pub fn try_recv(&self) -> Option<Message> {
-        Some(self.channel.messages[0])
+        self.channel.lock().unwrap().messages.pop()
     }
 }
 
@@ -66,13 +66,13 @@ mod tests {
     use super::*;
     #[test]
     fn it_works() {
-        let ch = Arc::new(Channel::new());
+        let ch = Arc::new(Mutex::new(Channel::new()));
         let px = Publisher::new(ch.clone());
         let sx = Subscriber::new(ch);
         let msg = Message{};
         px.broadcast(msg);
         let res = sx.map(|x| x).collect::<Vec<Message>>();
         println!("{:?} {:?}", res, msg);
-        // assert_eq!(msg, res);
+        assert_eq!(msg, res[0]);
     }
 }
