@@ -1,78 +1,27 @@
-// find a way to create mutable shared ownership
-use std::sync::{ Arc, Mutex };
+use crossbeam_channel::bounded;
+pub mod event;
+pub mod receiver;
+pub mod sender;
 
-#[derive(Debug, Copy, Clone)]
-pub struct Message {
-}
-impl PartialEq for Message {
-    fn eq(&self, _other: &Message) -> bool {
-        true
-    }
-}
-impl Eq for Message {}
+use receiver::Receiver;
+use sender::Sender;
 
-#[derive(Debug, Clone)]
-pub struct Channel {
-    pub messages: Vec<Message>
-}
-impl Channel {
-    pub fn new() -> Self {
-        Self {
-          messages: vec!()
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Publisher {
-    pub channel: Arc<Mutex<Channel>>,
-}
-impl Publisher {
-    pub fn new(channel: Arc<Mutex<Channel>>) -> Self {
-        Self {
-            channel
-        }
-    }
-    pub fn broadcast(&self, message: Message) {
-        self.channel.lock().unwrap().messages.push(message);
-    }
-}
-
-#[derive(Debug)]
-pub struct Subscriber {
-    pub channel: Arc<Mutex<Channel>>,
-}
-impl Subscriber {
-    pub fn new(channel: Arc<Mutex<Channel>>) -> Self {
-        Self {
-            channel
-        }
-    }
-    pub fn try_recv(&self) -> Option<Message> {
-        self.channel.lock().unwrap().messages.pop()
-    }
-}
-
-impl Iterator for Subscriber {
-    type Item = Message;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.try_recv()
-    }
+pub fn create_queue<T>(size: usize) -> (Sender<T>, Receiver<T>) {
+    let (s, r) = bounded(size);
+    (Sender::new(s), Receiver::new(r))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::event::*;
     #[test]
-    fn it_works() {
-        let ch = Arc::new(Mutex::new(Channel::new()));
-        let px = Publisher::new(ch.clone());
-        let sx = Subscriber::new(ch);
-        let msg = Message{};
-        px.broadcast(msg);
-        let res = sx.map(|x| x).collect::<Vec<Message>>();
-        println!("{:?} {:?}", res, msg);
-        assert_eq!(msg, res[0]);
+    fn send_simple_message() {
+        println!("0");
+        let (px, sx) = create_queue(2);
+        let msg = Event::new(2, String::from("sad"), 1);
+        px.push(msg).unwrap();
+        let res = sx.map(|x| x).collect::<Vec<Event<_>>>();
+        assert_eq!(Event::new(2, String::from("sad"), 1), res[0]);
     }
 }

@@ -25,25 +25,30 @@ use gfx_hal::{
 };
 use shaderc::{Compiler, ShaderKind};
 use std::mem::ManuallyDrop;
+use winit::event::WindowEvent;
 use winit::window::Window;
 
 #[derive(Debug)]
 pub struct Resources<B: gfx_hal::Backend> {
     pub instance: B::Instance,
     pub surface: B::Surface,
+    pub adapter: Adapter<B>,
     pub device: B::Device,
+    pub queue_group: QueueGroup<B>,
     pub render_passes: Vec<B::RenderPass>,
     pub pipeline_layouts: Vec<B::PipelineLayout>,
     pub pipelines: Vec<B::GraphicsPipeline>,
+    // pub command_buffers: Vec<B::CommandBuffer>,
+    // pub fences: Vec<B::Fence>,
+    // pub semaphores: Vec<B::Semaphore>,
     pub command_pool: B::CommandPool,
+
+    pub command_buffer: B::CommandBuffer,
     pub submission_complete_fence: B::Fence,
     pub rendering_complete_semaphore: B::Semaphore,
-
-    pub adapter: Adapter<B>,
     pub surface_color_format: Format,
-    pub command_buffer: B::CommandBuffer,
-    pub queue_group: QueueGroup<B>,
     pub frame: u64,
+    pub events: Vec<WindowEvent<'static>>,
 }
 
 impl Resources<back::Backend> {
@@ -146,6 +151,7 @@ impl Resources<back::Backend> {
             command_buffer,
             queue_group,
             frame: u64::MIN,
+            events: vec![],
         })
     }
 }
@@ -172,10 +178,18 @@ impl Drop for ResourceHolder {
                 pipelines,
                 submission_complete_fence,
                 rendering_complete_semaphore,
+                // fences,
+                // semaphores,
                 ..
             } = ManuallyDrop::take(&mut self.0);
             device.destroy_semaphore(rendering_complete_semaphore);
             device.destroy_fence(submission_complete_fence);
+            // for semaphore in semaphores {
+            //     device.destroy_semaphore(semaphore);
+            // }
+            // for fence in fences {
+            //     device.destroy_fence(fence);
+            // }
             for pipeline in pipelines {
                 device.destroy_graphics_pipeline(pipeline);
             }

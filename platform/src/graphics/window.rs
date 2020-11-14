@@ -20,7 +20,7 @@ impl Window {
     pub fn new() -> Result<Self, ()> {
         let event_loop = EventLoop::new();
         let (logical_window_size, physical_window_size) = {
-            let dpi = event_loop.primary_monitor().scale_factor();
+            let dpi = event_loop.primary_monitor().unwrap().scale_factor();
             let logical: LogicalSize<u32> = WINDOW_SIZE.into();
             let physical: PhysicalSize<u32> = logical.to_physical(dpi);
             (logical, physical)

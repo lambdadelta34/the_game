@@ -10,4 +10,4 @@ platform = { path = "../platform" }
 libloading = "0.6"
 log = "0.4.11"
 simple_logger = "1.9.0"
-winit = "0.22.2"
+winit = "0.23.0"

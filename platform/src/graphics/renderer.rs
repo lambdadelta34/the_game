@@ -10,6 +10,7 @@ use gfx_hal::{
     window::{Extent2D, PresentationSurface, Surface, SwapchainConfig},
 };
 use std::borrow::Borrow;
+use winit::event::{Event, WindowEvent};
 
 #[derive(Debug)]
 pub struct Renderer {
@@ -47,6 +48,7 @@ impl Renderer {
             surface_color_format,
             ..
         } = resources;
+        *frame += 1;
         println!("FRAME {}", frame);
         unsafe {
             // We refuse to wait more than a second, to avoid hanging.
@@ -106,6 +108,17 @@ impl Renderer {
         };
 
         let anim = start_time.elapsed().as_secs_f32().sin() * 0.5 + 0.5;
+        let (x, y) = {
+            //     match events.pop() {
+            //         Some(WindowEvent::KeyboardInput {
+            //             input,
+            //             is_synthetic,
+            //             ..
+            //         }) => (0., 0.),
+            //         None => (0., 0.),
+            //     };
+            (-0.5, 0.5)
+        };
         let small = [0.33, 0.33];
         let triangles = &[
             // Red triangle
@@ -129,7 +142,7 @@ impl Renderer {
             // Blue <-> cyan animated triangle
             PushConstants {
                 color: [0.0, anim, 1.0, 1.0],
-                pos: [-0.5, 0.5],
+                pos: [x, y],
                 scale: small,
             },
             // Down <-> up animated triangle
@@ -172,21 +185,20 @@ impl Renderer {
             }
             command_buffer.finish();
         }
+
+        let submission = Submission {
+            command_buffers: vec![&command_buffer],
+            wait_semaphores: None,
+            signal_semaphores: vec![&semaphore],
+        };
+        let queue = &mut queue_group.queues[0];
         unsafe {
-            let submission = Submission {
-                command_buffers: vec![&command_buffer],
-                wait_semaphores: None,
-                signal_semaphores: vec![&semaphore],
-            };
-            let queue = &mut queue_group.queues[0];
             queue.submit(submission, Some(&fence));
             queue
                 .present(surface, surface_image, Some(&semaphore))
                 .unwrap();
             &device.destroy_framebuffer(framebuffer);
         }
-
-        *frame += 1;
     }
 }
 
