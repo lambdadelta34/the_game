@@ -38,16 +38,14 @@ impl<'a> Renderer<'a> {
         let mut extent = &mut self.surface_extent;
         let mut resources = &mut self.resources;
 
-        // let event = self.events.try_recv().unwrap();
-        self.events
-            .try_iter()
-            .for_each(|event| match event.payload {
-                // redraw continiously
-                WEvent::MainEventsCleared => {
-                    Renderer::draw(&mut resources, &world, &mut extent);
-                }
-                _ => (),
-            });
+        let event = self.events.try_recv().unwrap();
+        match event.payload {
+            // redraw continiously
+            WEvent::MainEventsCleared => {
+                Renderer::draw(&mut resources, &world, &mut extent);
+            }
+            _ => {}
+        }
     }
 
     fn draw(resources: &mut ResourceHolder, world: &WorldState, extent: &mut Extent2D) {

@@ -52,6 +52,7 @@ fn main() {
                 // TODO: message gets read only once, hence double push. fix this
                 queue.push(event.clone()).unwrap();
                 world.proccess_events(&mut world_state);
+                #[cfg(feature = "crossbeam")]
                 queue.push(event).unwrap();
                 platform.proccess_events(&world_state);
             }

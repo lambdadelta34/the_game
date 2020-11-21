@@ -4,7 +4,20 @@ version = "0.1.0"
 authors = ["lambdadelta"]
 edition = "2018"
 
+[features]
+default = ["bus-queue"]
+crossbeam = ["crossbeam-channel"]
+bus-queue = ["bus_queue"]
+
 [dependencies]
 common = { path = "../common" }
 
-crossbeam-channel = "0.5.0"
+[dependencies.crossbeam-channel]
+package = "crossbeam-channel"
+version = "0.5.0"
+optional = true
+
+[dependencies.bus_queue]
+package = "bus_queue"
+version = "0.5.3"
+optional = true
