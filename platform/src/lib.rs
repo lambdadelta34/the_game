@@ -4,6 +4,7 @@ pub mod window;
 use queue::{event::Event, receiver::Receiver};
 use window::Window;
 use winit::event::Event as WEvent;
+use world::WorldState;
 
 pub const APP_NAME: &'static str = "Gamey";
 
@@ -19,8 +20,8 @@ impl<'a> Platform<'a> {
         Ok(Self { graphics })
     }
 
-    pub fn proccess_events(&mut self) {
-        &self.graphics.update();
+    pub fn proccess_events(&mut self, world: &WorldState) {
+        &self.graphics.update(&world);
     }
 }
 

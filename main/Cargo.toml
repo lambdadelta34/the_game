@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 platform = { path = "../platform" }
 queue = { path = "../queue" }
+world = { path = "../world" }
 
 libloading = "0.6"
 log = "0.4.11"

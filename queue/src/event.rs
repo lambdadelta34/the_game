@@ -1,6 +1,6 @@
 use common::Time;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Event<T> {
     pub time: Time,
     pub payload: T,

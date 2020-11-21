@@ -1,8 +1,8 @@
 // push everywhere except for continious events
-pub type Time = f32;
+pub type Time = u128;
 
 pub fn time() -> Time {
-    1.
+    1
 }
 
 // #[derive(Debug)]

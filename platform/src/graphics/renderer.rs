@@ -11,6 +11,9 @@ use gfx_hal::{
 };
 use queue::{event::Event, receiver::Receiver};
 use std::borrow::Borrow;
+use world::WorldState;
+
+// TODO: remove winit dependency
 use winit::event::Event as WEvent;
 
 #[derive(Debug)]
@@ -31,21 +34,23 @@ impl<'a> Renderer<'a> {
         })
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, world: &WorldState) {
         let mut extent = &mut self.surface_extent;
         let mut resources = &mut self.resources;
+
+        // let event = self.events.try_recv().unwrap();
         self.events
             .try_iter()
             .for_each(|event| match event.payload {
                 // redraw continiously
                 WEvent::MainEventsCleared => {
-                    Renderer::draw(&mut resources, event.time, &mut extent);
+                    Renderer::draw(&mut resources, &world, &mut extent);
                 }
                 _ => (),
             });
     }
 
-    fn draw(resources: &mut ResourceHolder, start_time: f32, extent: &mut Extent2D) {
+    fn draw(resources: &mut ResourceHolder, world: &WorldState, extent: &mut Extent2D) {
         let resources: &mut Resources<_> = &mut resources.0;
         let Resources {
             adapter,
@@ -122,55 +127,13 @@ impl<'a> Renderer<'a> {
             }
         };
 
-        let anim = start_time.sin() * 0.5 + 0.5;
-        let (x, y) = {
-            //     match events.pop() {
-            //         Some(WindowEvent::KeyboardInput {
-            //             input,
-            //             is_synthetic,
-            //             ..
-            //         }) => (0., 0.),
-            //         None => (0., 0.),
-            //     };
-            (-0.5, 0.5)
-        };
         let small = [0.33, 0.33];
         let triangles = &[
             // Red triangle
             PushConstants {
                 color: [1.0, 0.0, 0.0, 1.0],
-                pos: [-0.5, -0.5],
+                pos: [world.player.0, world.player.1],
                 scale: small,
-            },
-            // Green triangle
-            PushConstants {
-                color: [0.0, 1.0, 0.0, 1.0],
-                pos: [0.0, -0.5],
-                scale: small,
-            },
-            // Blue triangle
-            PushConstants {
-                color: [0.0, 0.0, 1.0, 1.0],
-                pos: [0.5, -0.5],
-                scale: small,
-            },
-            // Blue <-> cyan animated triangle
-            PushConstants {
-                color: [0.0, anim, 1.0, 1.0],
-                pos: [x, y],
-                scale: small,
-            },
-            // Down <-> up animated triangle
-            PushConstants {
-                color: [1.0, 1.0, 1.0, 1.0],
-                pos: [0.0, 0.5 - anim * 0.5],
-                scale: small,
-            },
-            // Small <-> big animated triangle
-            PushConstants {
-                color: [1.0, 1.0, 1.0, 1.0],
-                pos: [0.5, 0.5],
-                scale: [0.33 + anim * 0.33, 0.33 + anim * 0.33],
             },
         ];
         unsafe {
