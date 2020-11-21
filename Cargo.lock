@@ -638,6 +638,7 @@ dependencies = [
  "libloading",
  "log",
  "platform",
+ "queue",
  "simple_logger",
  "winit",
 ]
@@ -925,7 +926,6 @@ checksum = "d36492546b6af1463394d46f0c834346f31548646f6ba10849802c9c9a27ac33"
 name = "platform"
 version = "0.1.0"
 dependencies = [
- "common",
  "gfx-backend-dx12",
  "gfx-backend-metal",
  "gfx-backend-vulkan",

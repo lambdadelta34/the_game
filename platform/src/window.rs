@@ -1,4 +1,4 @@
-use super::super::APP_NAME;
+use super::APP_NAME;
 use gfx_hal::window::Extent2D;
 use winit::{
     dpi::{LogicalSize, PhysicalSize},

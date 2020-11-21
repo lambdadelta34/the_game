@@ -1,5 +1,5 @@
 use super::resources::{PushConstants, ResourceHolder, Resources};
-use super::window::Window;
+use crate::window::Window;
 use gfx_hal::{
     command::{ClearColor, ClearValue, CommandBuffer, CommandBufferFlags, SubpassContents},
     device::Device,
@@ -9,29 +9,44 @@ use gfx_hal::{
     queue::{CommandQueue, Submission},
     window::{Extent2D, PresentationSurface, Surface, SwapchainConfig},
 };
+use queue::{event::Event, receiver::Receiver};
 use std::borrow::Borrow;
-use winit::event::{Event, WindowEvent};
+use winit::event::Event as WEvent;
 
 #[derive(Debug)]
-pub struct Renderer {
-    pub window: Window,
+pub struct Renderer<'a> {
     pub resources: ResourceHolder,
+    pub events: Receiver<Event<WEvent<'a, ()>>>,
+    pub surface_extent: Extent2D,
 }
 
-impl Renderer {
-    pub fn new() -> Result<Self, ()> {
-        let window = Window::new()?;
+impl<'a> Renderer<'a> {
+    pub fn new(window: &Window, events: Receiver<Event<WEvent<'a, ()>>>) -> Result<Self, ()> {
         let resources = ResourceHolder::new(&window.window)?;
 
-        Ok(Self { window, resources })
+        Ok(Self {
+            resources,
+            events,
+            surface_extent: window.surface_extent,
+        })
     }
 
-    pub fn draw(
-        resource_holder: &mut ResourceHolder,
-        surface_extent: &mut Extent2D,
-        start_time: std::time::Instant,
-    ) {
-        let resources: &mut Resources<_> = &mut resource_holder.0;
+    pub fn update(&mut self) {
+        let mut extent = &mut self.surface_extent;
+        let mut resources = &mut self.resources;
+        self.events
+            .try_iter()
+            .for_each(|event| match event.payload {
+                // redraw continiously
+                WEvent::MainEventsCleared => {
+                    Renderer::draw(&mut resources, event.time, &mut extent);
+                }
+                _ => (),
+            });
+    }
+
+    fn draw(resources: &mut ResourceHolder, start_time: f32, extent: &mut Extent2D) {
+        let resources: &mut Resources<_> = &mut resources.0;
         let Resources {
             adapter,
             command_buffer,
@@ -61,12 +76,12 @@ impl Renderer {
         }
         let caps = surface.capabilities(&adapter.physical_device);
         let mut swapchain_config =
-            SwapchainConfig::from_caps(&caps, *surface_color_format, *surface_extent);
+            SwapchainConfig::from_caps(&caps, *surface_color_format, *extent);
         // This seems to fix some fullscreen slowdown on macOS.
         if caps.image_count.contains(&3) {
             swapchain_config.image_count = 3;
         }
-        *surface_extent = swapchain_config.extent;
+        *extent = swapchain_config.extent;
         unsafe {
             surface
                 .configure_swapchain(&device, swapchain_config)
@@ -88,8 +103,8 @@ impl Renderer {
                     &render_passes[0],
                     vec![surface_image.borrow()],
                     Extent {
-                        width: surface_extent.width,
-                        height: surface_extent.height,
+                        width: extent.width,
+                        height: extent.height,
                         depth: 1,
                     },
                 )
@@ -100,14 +115,14 @@ impl Renderer {
                 rect: Rect {
                     x: 0,
                     y: 0,
-                    w: surface_extent.width as i16,
-                    h: surface_extent.height as i16,
+                    w: extent.width as i16,
+                    h: extent.height as i16,
                 },
                 depth: 0.0..1.0,
             }
         };
 
-        let anim = start_time.elapsed().as_secs_f32().sin() * 0.5 + 0.5;
+        let anim = start_time.sin() * 0.5 + 0.5;
         let (x, y) = {
             //     match events.pop() {
             //         Some(WindowEvent::KeyboardInput {

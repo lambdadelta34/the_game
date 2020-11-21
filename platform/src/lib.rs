@@ -1,28 +1,33 @@
 pub mod graphics;
-
-use common::{time, Time};
 use graphics::renderer::Renderer;
+pub mod window;
+use queue::{event::Event, receiver::Receiver};
+use window::Window;
+use winit::event::Event as WEvent;
 
 pub const APP_NAME: &'static str = "Gamey";
 
 #[derive(Debug)]
-pub struct Platform {
-    pub graphics: Renderer,
-    pub time: Time,
+pub struct Platform<'a> {
+    pub graphics: Renderer<'a>,
 }
 
-impl Platform {
-    pub fn start() -> Result<Self, ()> {
-        let graphics = Renderer::new()?;
+impl<'a> Platform<'a> {
+    pub fn start(window: &Window, events: Receiver<Event<WEvent<'a, ()>>>) -> Result<Self, ()> {
+        let graphics = Renderer::new(&window, events)?;
 
-        Ok(Self {
-            graphics,
-            time: time(),
-        })
+        Ok(Self { graphics })
+    }
+
+    pub fn proccess_events(&mut self) {
+        &self.graphics.update();
     }
 }
 
 #[no_mangle]
-pub fn build_platform() -> Platform {
-    Platform::start().unwrap()
+pub fn build_platform<'a>(
+    window: &Window,
+    events: Receiver<Event<WEvent<'a, ()>>>,
+) -> Platform<'a> {
+    Platform::start(window, events).unwrap()
 }

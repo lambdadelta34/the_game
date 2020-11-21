@@ -2,18 +2,13 @@ use common::Time;
 
 #[derive(Debug)]
 pub struct Event<T> {
-    time: Time,
-    payload: T,
-    name: String,
+    pub time: Time,
+    pub payload: T,
 }
 
 impl<T> Event<T> {
-    pub fn new(payload: T, name: String, time: Time) -> Self {
-        Self {
-            time,
-            payload,
-            name,
-        }
+    pub fn new(payload: T, time: Time) -> Self {
+        Self { time, payload }
     }
 }
 impl<T> PartialEq for Event<T> {

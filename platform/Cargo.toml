@@ -30,7 +30,6 @@ optional = true
 
 [dependencies]
 queue = { path = "../queue" }
-common = { path = "../common" }
 
 gfx-hal = "0.6.0"
 log = "0.4.11"
