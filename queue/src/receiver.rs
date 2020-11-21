@@ -1,9 +1,9 @@
-#[cfg(any(feature = "bus-queue", feature = "default"))]
+#[cfg(feature = "bus-queue")]
 use bus_queue::{channel::TryRecvError, flavors::arc_swap::Receiver as R};
 #[cfg(feature = "crossbeam")]
 use crossbeam_channel::{Receiver as R, TryIter, TryRecvError};
 
-#[cfg(any(feature = "bus-queue", feature = "default"))]
+#[cfg(feature = "bus-queue")]
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -15,13 +15,13 @@ impl<T> Receiver<T> {
         Self { receiver }
     }
 
-    #[cfg(any(feature = "bus-queue", feature = "default"))]
+    #[cfg(feature = "bus-queue")]
     pub fn try_recv(&self) -> Result<Arc<T>, TryRecvError> {
         self.receiver.try_recv()
     }
 
     #[cfg(feature = "crossbeam")]
-    pub fn try_recv(&self) -> Result<Arc<T>, TryRecvError> {
+    pub fn try_recv(&self) -> Result<T, TryRecvError> {
         self.receiver.try_recv()
     }
 
@@ -32,15 +32,14 @@ impl<T> Receiver<T> {
 }
 
 impl<T> Iterator for Receiver<T> {
-    #[cfg(any(feature = "bus-queue", feature = "default"))]
+    #[cfg(feature = "bus-queue")]
     type Item = Arc<T>;
     #[cfg(feature = "crossbeam")]
     type Item = T;
 
-    #[cfg(any(feature = "bus-queue", feature = "default"))]
+    #[cfg(feature = "bus-queue")]
     fn next(&mut self) -> Option<Self::Item> {
         self.receiver.try_recv().ok()
-        // self.receiver.try_iter().next()
     }
 
     #[cfg(feature = "crossbeam")]

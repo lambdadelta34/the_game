@@ -6,6 +6,7 @@ edition = "2018"
 
 [features]
 default = ["bus-queue"]
+# default = ["crossbeam"]
 crossbeam = ["crossbeam-channel"]
 bus-queue = ["bus_queue"]
 

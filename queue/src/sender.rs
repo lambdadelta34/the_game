@@ -1,6 +1,6 @@
-#[cfg(any(feature = "bus-queue", feature = "default"))]
+#[cfg(feature = "bus-queue")]
 use bus_queue::channel::SendError;
-#[cfg(any(feature = "bus-queue", feature = "default"))]
+#[cfg(feature = "bus-queue")]
 use bus_queue::flavors::arc_swap::Sender as S;
 #[cfg(feature = "crossbeam")]
 use crossbeam_channel::{SendError, Sender as S};
@@ -15,7 +15,7 @@ impl<T> Sender<T> {
         Self { sender }
     }
 
-    #[cfg(any(feature = "bus-queue", feature = "default"))]
+    #[cfg(feature = "bus-queue")]
     pub fn push(&self, event: T) -> Result<(), SendError<T>> {
         self.sender.broadcast(event)
     }

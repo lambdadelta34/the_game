@@ -8,7 +8,7 @@ edition = "2018"
 crate-type=["dylib"]
 
 [features]
-default = ["gfx-backend-metal"]
+default = ["metal"]
 metal = ["gfx-backend-metal"]
 dx12 = ["gfx-backend-dx12"]
 vulkan = ["gfx-backend-vulkan"]
