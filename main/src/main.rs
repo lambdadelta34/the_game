@@ -44,7 +44,20 @@ fn main() {
             E::WindowEvent {
                 event: WindowEvent::ScaleFactorChanged { .. },
                 ..
-            } => {}
+            } => {
+                platform.proccess_events(&world_state);
+            }
+            E::WindowEvent {
+                event: WindowEvent::Resized(dims),
+                ..
+            } => {
+                // platform.graphics.dimensions = window::Extent2D {
+                //     width: dims.width,
+                //     height: dims.height,
+                // };
+                // platform.graphics.recreate_swapchain();
+                platform.proccess_events(&world_state);
+            }
             _ => {
                 // TODO: map events to domain specific events
                 let event =

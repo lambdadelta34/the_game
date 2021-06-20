@@ -15,15 +15,16 @@ use gfx_hal::{
     pass::{Attachment, AttachmentLoadOp, AttachmentOps, AttachmentStoreOp, Subpass, SubpassDesc},
     pool::{CommandPool, CommandPoolCreateFlags},
     pso::{
-        BlendState, ColorBlendDesc, ColorMask, EntryPoint, Face, GraphicsPipelineDesc,
-        InputAssemblerDesc, Primitive, PrimitiveAssemblerDesc, Rasterizer, ShaderStageFlags,
-        Specialization,
+        BlendState, ColorBlendDesc, ColorMask, DescriptorSetLayoutBinding, DescriptorType,
+        EntryPoint, Face, GraphicsPipelineDesc, ImageDescriptorType, InputAssemblerDesc, Primitive,
+        PrimitiveAssemblerDesc, Rasterizer, ShaderStageFlags, Specialization,
     },
     queue::{QueueFamily, QueueGroup},
     window::{PresentationSurface, Surface},
     Features, Instance,
 };
 use shaderc::{Compiler, ShaderKind};
+use std::iter;
 use std::mem::ManuallyDrop;
 use winit::event::WindowEvent;
 use winit::window::Window;
@@ -79,6 +80,7 @@ impl Resources<back::Backend> {
             };
             (gpu.device, gpu.queue_groups.pop().unwrap())
         };
+
         let (command_pool, command_buffer) = unsafe {
             let mut command_pool = device
                 .create_command_pool(queue_group.family, CommandPoolCreateFlags::empty())
@@ -113,14 +115,40 @@ impl Resources<back::Backend> {
             };
             unsafe {
                 device
-                    .create_render_pass(&[color_attachment], &[subpass], &[])
+                    .create_render_pass(
+                        iter::once(color_attachment),
+                        iter::once(subpass),
+                        iter::empty(),
+                    )
                     .expect("Out of memory")
             }
         };
+        let set_layout = ManuallyDrop::new(
+            unsafe {
+                device.create_descriptor_set_layout(
+                    vec![DescriptorSetLayoutBinding {
+                        binding: 0,
+                        ty: DescriptorType::Image {
+                            ty: ImageDescriptorType::Sampled {
+                                with_sampler: false,
+                            },
+                        },
+                        count: 1,
+                        stage_flags: ShaderStageFlags::VERTEX,
+                        immutable_samplers: false,
+                    }]
+                    .into_iter(),
+                    iter::empty(),
+                )
+            }
+            .expect("Can't create descriptor set layout"),
+        );
+
         let pipeline_layout = unsafe {
-            let push_constant_bytes = std::mem::size_of::<PushConstants>() as u32;
+            // let push_constant_bytes = std::mem::size_of::<PushConstants>() as u32;
             device
-                .create_pipeline_layout(&[], &[(ShaderStageFlags::VERTEX, 0..push_constant_bytes)])
+                .create_pipeline_layout(iter::once(&*set_layout), iter::empty())
+                // .create_pipeline_layout(&[], &[(ShaderStageFlags::VERTEX, 0..push_constant_bytes)])
                 .expect("Out of memory")
         };
         let vertex_shader = include_str!("./shaders/vertex/vs.vert");
@@ -157,16 +185,17 @@ impl Resources<back::Backend> {
 }
 
 #[derive(Debug)]
-pub struct ResourceHolder(pub ManuallyDrop<Resources<back::Backend>>);
+pub struct ResourceHolder(pub Resources<back::Backend>);
 
 impl ResourceHolder {
     pub fn new(window: &Window) -> Result<Self, ()> {
-        Ok(Self(ManuallyDrop::new(Resources::new(window)?)))
+        Ok(Self(Resources::new(window)?))
     }
 }
 
 impl Drop for ResourceHolder {
     fn drop(&mut self) {
+        self.0.device.wait_idle().unwrap();
         unsafe {
             let Resources {
                 instance,
@@ -181,9 +210,9 @@ impl Drop for ResourceHolder {
                 // fences,
                 // semaphores,
                 ..
-            } = ManuallyDrop::take(&mut self.0);
-            device.destroy_semaphore(rendering_complete_semaphore);
-            device.destroy_fence(submission_complete_fence);
+            } = &mut self.0;
+            device.destroy_semaphore(*rendering_complete_semaphore);
+            device.destroy_fence(*submission_complete_fence);
             // for semaphore in semaphores {
             //     device.destroy_semaphore(semaphore);
             // }
@@ -191,15 +220,15 @@ impl Drop for ResourceHolder {
             //     device.destroy_fence(fence);
             // }
             for pipeline in pipelines {
-                device.destroy_graphics_pipeline(pipeline);
+                device.destroy_graphics_pipeline(*pipeline);
             }
             for pipeline_layout in pipeline_layouts {
-                device.destroy_pipeline_layout(pipeline_layout);
+                device.destroy_pipeline_layout(*pipeline_layout);
             }
             for render_pass in render_passes {
-                device.destroy_render_pass(render_pass);
+                device.destroy_render_pass(*render_pass);
             }
-            device.destroy_command_pool(command_pool);
+            device.destroy_command_pool(*command_pool);
             surface.unconfigure_swapchain(&device);
             instance.destroy_surface(surface);
         }
@@ -265,7 +294,6 @@ where
         .expect("Failed to create graphics pipeline");
     device.destroy_shader_module(vertex_shader_module);
     device.destroy_shader_module(fragment_shader_module);
-
     pipeline
 }
 

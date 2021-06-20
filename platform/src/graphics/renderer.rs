@@ -1,20 +1,24 @@
 use super::resources::{PushConstants, ResourceHolder, Resources};
 use crate::window::Window;
 use gfx_hal::{
-    command::{ClearColor, ClearValue, CommandBuffer, CommandBufferFlags, SubpassContents},
+    command::{
+        ClearColor, ClearValue, CommandBuffer, CommandBufferFlags, RenderAttachmentInfo,
+        SubpassContents,
+    },
     device::Device,
     image::Extent,
     pool::CommandPool,
     pso::{Rect, ShaderStageFlags, Viewport},
-    queue::{CommandQueue, Submission},
+    queue::Queue,
     window::{Extent2D, PresentationSurface, Surface, SwapchainConfig},
 };
 use queue::{event::Event, receiver::Receiver};
 use std::borrow::Borrow;
+use std::iter;
 use world::WorldState;
 
 // TODO: remove winit dependency
-use winit::event::Event as WEvent;
+use winit::event::{Event as WEvent, WindowEvent};
 
 #[derive(Debug)]
 pub struct Renderer<'a> {
@@ -27,6 +31,11 @@ impl<'a> Renderer<'a> {
     pub fn new(window: &Window, events: Receiver<Event<WEvent<'a, ()>>>) -> Result<Self, ()> {
         let resources = ResourceHolder::new(&window.window)?;
 
+        let caps = surface.capabilities(&adapter.physical_device);
+        let mut swapchain_config =
+            SwapchainConfig::from_caps(&caps, *surface_color_format, self.surface_extent);
+        self.surface_extent = swapchain_config.extent;
+
         Ok(Self {
             resources,
             events,
@@ -34,28 +43,32 @@ impl<'a> Renderer<'a> {
         })
     }
 
-    pub fn update(&mut self, world: &WorldState) {
-        let mut extent = &mut self.surface_extent;
-        let mut resources = &mut self.resources;
-
+    pub fn update(&self, world: &WorldState) {
         let event = self.events.try_recv().unwrap();
         match event.payload {
             // redraw continiously
             WEvent::MainEventsCleared => {
-                Renderer::draw(&mut resources, &world, &mut extent);
+                // Renderer::draw(&mut resources, &world, &mut extent);
+                self.draw(&world);
+            }
+            WEvent::WindowEvent {
+                event: WindowEvent::ScaleFactorChanged { .. },
+                ..
+            } => {
+                // self.recreate_swapchain();
             }
             _ => {}
         }
     }
 
-    fn draw(resources: &mut ResourceHolder, world: &WorldState, extent: &mut Extent2D) {
-        let resources: &mut Resources<_> = &mut resources.0;
+    // fn draw(resources: &mut ResourceHolder, world: &WorldState, extent: &mut Extent2D) {
+    fn draw(&mut self, world: &WorldState) {
         let Resources {
             adapter,
             command_buffer,
             command_pool,
             device,
-            frame,
+            mut frame,
             pipeline_layouts,
             pipelines,
             queue_group,
@@ -65,8 +78,8 @@ impl<'a> Renderer<'a> {
             surface,
             surface_color_format,
             ..
-        } = resources;
-        *frame += 1;
+        } = &mut self.resources.0;
+        frame += 1;
         println!("FRAME {}", frame);
         unsafe {
             // We refuse to wait more than a second, to avoid hanging.
@@ -74,17 +87,9 @@ impl<'a> Renderer<'a> {
             device
                 .wait_for_fence(&fence, render_timeout_ns)
                 .expect("Out of memory or device lost");
-            device.reset_fence(&fence).expect("Out of memory");
+            device.reset_fence(&mut fence).expect("Out of memory");
             command_pool.reset(false);
         }
-        let caps = surface.capabilities(&adapter.physical_device);
-        let mut swapchain_config =
-            SwapchainConfig::from_caps(&caps, *surface_color_format, *extent);
-        // This seems to fix some fullscreen slowdown on macOS.
-        if caps.image_count.contains(&3) {
-            swapchain_config.image_count = 3;
-        }
-        *extent = swapchain_config.extent;
         unsafe {
             surface
                 .configure_swapchain(&device, swapchain_config)
@@ -100,14 +105,15 @@ impl<'a> Renderer<'a> {
                 }
             }
         };
+        let fat = swapchain_config.framebuffer_attachment();
         let framebuffer = unsafe {
             device
                 .create_framebuffer(
                     &render_passes[0],
-                    vec![surface_image.borrow()],
+                    iter::once(fat),
                     Extent {
-                        width: extent.width,
-                        height: extent.height,
+                        width: self.surface_extent.width,
+                        height: self.surface_extent.height,
                         depth: 1,
                     },
                 )
@@ -118,8 +124,8 @@ impl<'a> Renderer<'a> {
                 rect: Rect {
                     x: 0,
                     y: 0,
-                    w: extent.width as i16,
-                    h: extent.height as i16,
+                    w: self.surface_extent.width as i16,
+                    h: self.surface_extent.height as i16,
                 },
                 depth: 0.0..1.0,
             }
@@ -136,17 +142,20 @@ impl<'a> Renderer<'a> {
         ];
         unsafe {
             command_buffer.begin_primary(CommandBufferFlags::ONE_TIME_SUBMIT);
-            command_buffer.set_viewports(0, &[viewport.clone()]);
-            command_buffer.set_scissors(0, &[viewport.rect]);
+            command_buffer.set_viewports(0, iter::once(viewport.clone()));
+            command_buffer.set_scissors(0, iter::once(viewport.rect));
             command_buffer.begin_render_pass(
                 &render_passes[0],
                 &framebuffer,
                 viewport.rect,
-                &[ClearValue {
-                    color: ClearColor {
-                        float32: [0.0, 0.0, 0.0, 1.0],
+                iter::once(RenderAttachmentInfo {
+                    image_view: surface_image.borrow(),
+                    clear_value: ClearValue {
+                        color: ClearColor {
+                            float32: [0.0, 0.0, 0.0, 1.0],
+                        },
                     },
-                }],
+                }),
                 SubpassContents::Inline,
             );
             command_buffer.bind_graphics_pipeline(&pipelines[0]);
@@ -162,16 +171,16 @@ impl<'a> Renderer<'a> {
             command_buffer.finish();
         }
 
-        let submission = Submission {
-            command_buffers: vec![&command_buffer],
-            wait_semaphores: None,
-            signal_semaphores: vec![&semaphore],
-        };
         let queue = &mut queue_group.queues[0];
         unsafe {
-            queue.submit(submission, Some(&fence));
+            queue.submit(
+                iter::once(&*command_buffer),
+                iter::empty(),
+                iter::once(&semaphore),
+                Some(&mut fence),
+            );
             queue
-                .present(surface, surface_image, Some(&semaphore))
+                .present(&mut surface, surface_image, Some(&mut semaphore))
                 .unwrap();
             &device.destroy_framebuffer(framebuffer);
         }

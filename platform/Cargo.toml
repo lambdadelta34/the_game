@@ -5,7 +5,8 @@ authors = ["lambdadelta"]
 edition = "2018"
 
 [lib]
-crate-type=["dylib"]
+# https://github.com/rust-lang/rust/issues/19680
+crate-type=["rlib", "dylib"]
 
 [features]
 default = ["metal"]
@@ -15,25 +16,25 @@ vulkan = ["gfx-backend-vulkan"]
 
 [dependencies.gfx-backend-vulkan]
 package = "gfx-backend-vulkan"
-version = "0.6.3"
+version = "0.8.0"
 optional = true
 
 [target.'cfg(target_os = "macos")'.dependencies.gfx-backend-metal]
 package = "gfx-backend-metal"
-version = "0.6.3"
+version = "0.8.2"
 optional = true
 
 [target.'cfg(windows)'.dependencies.gfx-backend-dx12]
 package = "gfx-backend-dx12"
-version = "0.6.3"
+version = "0.8.0"
 optional = true
 
 [dependencies]
 queue = { path = "../queue" }
 world = { path = "../world" }
 
-gfx-hal = "0.6.0"
-log = "0.4.11"
-shaderc = "0.6.2"
-simple_logger = "1.9.0"
-winit = "0.23.0"
+gfx-hal = "0.8.0"
+log = "0.4.14"
+shaderc = "0.7.2"
+simple_logger = "1.11.0"
+winit = "0.25.0"

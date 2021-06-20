@@ -9,7 +9,7 @@ platform = { path = "../platform" }
 queue = { path = "../queue" }
 world = { path = "../world" }
 
-libloading = "0.6"
-log = "0.4.11"
-simple_logger = "1.9.0"
-winit = "0.23.0"
+libloading = "0.7.0"
+log = "0.4.14"
+simple_logger = "1.11.0"
+winit = "0.25.0"
